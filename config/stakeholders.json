@@ -1,0 +1,21 @@
+{
+    "Product Lead": {
+        "file": "config/product_questions.json"
+    },
+
+    "Data Lead": {
+        "file": "config/data_questions.json"
+    },
+
+    "Compliance Lead": {
+        "file": "config/compliance_questions.json"
+    },
+
+    "Business Head": {
+        "file": "config/business_questions.json"
+    },
+
+    "Infrastructure Lead": {
+        "file": "config/infrastructure_questions.json"
+    }
+}
