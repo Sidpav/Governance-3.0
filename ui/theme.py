@@ -939,6 +939,125 @@ def apply_reference_ui():
         top: 23px !important;
     }
 
+    /* Premium high-contrast component system. These rules intentionally sit
+       last so older page-level styles cannot create dark-on-dark controls. */
+    [data-testid="stExpander"] {
+        margin: 0 0 14px !important;
+    }
+    [data-testid="stExpander"] details {
+        overflow: hidden !important;
+        background: #FFFFFF !important;
+        border: 1px solid var(--cx-line) !important;
+        border-radius: 10px !important;
+        box-shadow: 0 1px 2px rgba(16, 32, 62, .03) !important;
+    }
+    [data-testid="stExpander"] details summary {
+        min-height: 58px !important;
+        padding: 0 18px !important;
+        background: #FFFFFF !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        color: var(--cx-text) !important;
+        transition: background .16s ease, color .16s ease !important;
+    }
+    [data-testid="stExpander"] details summary:hover {
+        background: #F4F7FD !important;
+        color: #155EEF !important;
+    }
+    [data-testid="stExpander"] details[open] summary {
+        background: #F7F9FE !important;
+        border-bottom: 1px solid var(--cx-line) !important;
+        color: #155EEF !important;
+    }
+    [data-testid="stExpander"] details summary *,
+    [data-testid="stExpander"] details summary p,
+    [data-testid="stExpander"] details summary span,
+    [data-testid="stExpander"] details summary svg {
+        color: inherit !important;
+        fill: currentColor !important;
+        font-weight: 700 !important;
+        opacity: 1 !important;
+    }
+    [data-testid="stExpander"] details div[role="group"] {
+        background: #FFFFFF !important;
+        color: var(--cx-text) !important;
+        padding: 14px 18px 18px !important;
+    }
+
+    [data-testid="stAlert"] {
+        border-radius: 9px !important;
+        border-width: 1px !important;
+        box-shadow: none !important;
+    }
+    [data-testid="stAlert"] p,
+    [data-testid="stAlert"] div,
+    [data-testid="stAlert"] span {
+        color: inherit !important;
+        opacity: 1 !important;
+    }
+
+    [data-testid="stMetric"] {
+        background: #FFFFFF !important;
+        border: 1px solid var(--cx-line) !important;
+        border-radius: 10px !important;
+        padding: 16px 18px !important;
+    }
+    [data-testid="stMetricLabel"] p { color: #627695 !important; font-weight: 700 !important; }
+    [data-testid="stMetricValue"] { color: var(--cx-text) !important; font-weight: 700 !important; }
+
+    [data-baseweb="tab-list"] {
+        gap: 10px !important;
+        border-bottom: 1px solid var(--cx-line) !important;
+    }
+    [data-baseweb="tab"] {
+        color: #627695 !important;
+        background: transparent !important;
+        font-weight: 700 !important;
+    }
+    [data-baseweb="tab"][aria-selected="true"] { color: #155EEF !important; }
+
+    [data-testid="stDataFrame"], [data-testid="stTable"] {
+        overflow: hidden !important;
+        background: #FFFFFF !important;
+        border: 1px solid var(--cx-line) !important;
+        border-radius: 10px !important;
+    }
+
+    input:focus, textarea:focus,
+    div[data-baseweb="select"] > div:focus-within,
+    .stButton > button:focus-visible {
+        outline: 3px solid rgba(21, 94, 239, .16) !important;
+        outline-offset: 1px !important;
+        border-color: #155EEF !important;
+        box-shadow: none !important;
+    }
+
+    [data-baseweb="popover"], [role="listbox"], [data-baseweb="menu"] {
+        background: #FFFFFF !important;
+        color: var(--cx-text) !important;
+        border-color: var(--cx-line) !important;
+    }
+    [role="option"] { color: var(--cx-text) !important; background: #FFFFFF !important; }
+    [role="option"]:hover, [role="option"][aria-selected="true"] {
+        color: #155EEF !important;
+        background: #EAF1FF !important;
+    }
+
+    [data-testid="stCheckbox"] label,
+    [data-testid="stRadio"] label,
+    [data-testid="stToggle"] label {
+        color: var(--cx-text) !important;
+        opacity: 1 !important;
+    }
+
+    /* Never allow disabled controls to become unreadable. */
+    button:disabled, input:disabled, textarea:disabled,
+    [aria-disabled="true"] {
+        color: #6F819E !important;
+        -webkit-text-fill-color: #6F819E !important;
+        opacity: .78 !important;
+    }
+
     @media (max-width: 1100px) {
         .cx-user-pill { max-width: 330px; overflow: hidden; text-overflow: ellipsis; }
         div[data-testid="stHorizontalBlock"]:has(.cx-top-active) a p,
