@@ -1,0 +1,907 @@
+<!-- Process Governance Dashboard — isolated component for the AI Oversight &
+     Evidence tab. Data is injected by pages/13_Tracking.py via __DATA_JSON__. -->
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #F6F7F9;
+    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    color: #1F2430; -webkit-font-smoothing: antialiased; }
+  #cx-root { padding: 20px 26px 8px; max-width: 1180px; margin: 0 auto; }
+
+  /* ---- header ---- */
+  .pg-header { display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 16px; flex-wrap: wrap; }
+  .pg-title { font-size: 1.35rem; font-weight: 800; color: #17203A; }
+  .pg-sub { font-size: .82rem; color: #7A8194; margin-top: 3px; }
+  .pg-dash-toggle { display: flex; gap: 10px; }
+  .dash-btn { border: 1px solid #D7DCE5; background: #FFFFFF; color: #3C4763;
+    padding: 9px 16px; border-radius: 9px; font-size: .82rem; font-weight: 700;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
+    transition: all .12s ease; white-space: nowrap; }
+  .dash-btn:hover { border-color: #9FB0CE; }
+  .dash-btn.active { background: #1B2D57; border-color: #1B2D57; color: #FFFFFF;
+    box-shadow: 0 4px 12px rgba(27,45,87,.22); }
+  .dash-btn .ic { font-size: .95rem; }
+
+  /* ---- info banner ---- */
+  .pg-banner { background: #EAF1FE; border: 1px solid #D6E2FB; color: #23458F;
+    border-radius: 10px; padding: 13px 18px; font-size: .84rem; line-height: 1.5;
+    margin: 16px 0 4px; }
+  .pg-banner b { color: #1B2D57; }
+
+  /* ---- level toggle ---- */
+  .lvl-row { display: flex; align-items: center; gap: 12px; margin: 20px 0 6px; }
+  .lvl-lbl { font-size: .72rem; font-weight: 800; letter-spacing: .12em;
+    color: #9AA1B2; }
+  .lvl-pills { display: inline-flex; gap: 8px; }
+  .lvl-pill { border: 1px solid #D7DCE5; background: #FFFFFF; color: #46506B;
+    padding: 7px 20px; border-radius: 999px; font-size: .82rem; font-weight: 700;
+    cursor: pointer; transition: all .12s ease; }
+  .lvl-pill:hover { border-color: #9FB0CE; }
+  .lvl-pill.active { background: #17203A; border-color: #17203A; color: #FFFFFF; }
+
+  /* ---- formula collapsible ---- */
+  .formula { background: #EAF1FE; border: 1px solid #D6E2FB; border-radius: 10px;
+    margin: 12px 0 4px; overflow: hidden; }
+  .formula-head { display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 18px; cursor: pointer; color: #1F55B8; font-weight: 700;
+    font-size: .86rem; }
+  .formula-head .lft { display: inline-flex; align-items: center; gap: 8px; }
+  .formula-body { padding: 0 18px 14px; font-size: .82rem; color: #37404F;
+    line-height: 1.6; display: none; }
+  .formula.open .formula-body { display: block; }
+  .formula-body .thr { display: inline-block; padding: 2px 10px; border-radius: 20px;
+    font-weight: 700; font-size: .74rem; margin-right: 6px; }
+  .t-ok { background: #D8F3E5; color: #0F7A54; }
+  .t-warn { background: #FCEFCB; color: #9A6B00; }
+  .t-risk { background: #FBDcdc; color: #B42318; }
+
+  /* ---- cards / grid ---- */
+  .card { background: #FFFFFF; border: 1px solid #E7E9EF; border-radius: 13px;
+    box-shadow: 0 1px 3px rgba(16,24,40,.05); }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+    margin: 14px 0; }
+  .metric { padding: 16px 18px; border-radius: 13px; border: 1px solid #E7E9EF;
+    background: #FFFFFF; min-height: 96px; }
+  .metric .num { font-size: 1.7rem; font-weight: 800; line-height: 1; }
+  .metric .lbl { font-weight: 700; color: #222A3B; margin-top: 9px; font-size: .86rem; }
+  .metric .sub { font-size: .74rem; color: #838B9C; margin-top: 4px; }
+  .m-blue   { background:#FFFFFF; border-color:#E1E8F5; } .m-blue .num{ color:#2563EB; }
+  .m-green  { background:#EAF8F0; border-color:#CDEAD9; } .m-green .num{ color:#12A150; }
+  .m-amber  { background:#FEF6E7; border-color:#F5E4BE; } .m-amber .num{ color:#D68910; }
+  .m-red    { background:#FCEDEC; border-color:#F5CFcb; } .m-red .num{ color:#DC3B34; }
+  .m-purple { background:#F2ECFB; border-color:#E0D2F5; } .m-purple .num{ color:#7C3AED; }
+
+  /* ---- registry ---- */
+  .sec-card { padding: 20px 22px; margin: 16px 0; }
+  .sec-title { font-weight: 800; color: #17203A; font-size: 1.02rem; }
+  .sec-hint { font-size: .8rem; color: #8A91A2; margin-top: 3px; margin-bottom: 6px; }
+  .reg-row { display: flex; align-items: center; justify-content: space-between;
+    gap: 14px; padding: 15px 16px; border: 1px solid #EBEDF2; border-radius: 11px;
+    margin-top: 12px; transition: all .12s ease; cursor: pointer; background:#FFF; }
+  .reg-row:hover { border-color: #B9C6E4; box-shadow: 0 3px 10px rgba(16,24,40,.06);
+    transform: translateY(-1px); }
+  .reg-name { font-weight: 700; color: #1B2439; font-size: .95rem;
+    display: flex; align-items: center; gap: 10px; }
+  .reg-sub { font-size: .78rem; color: #8A91A2; margin-top: 4px; }
+  .reg-right { display: flex; align-items: center; gap: 26px; }
+  .reg-col { text-align: right; }
+  .reg-lbl { font-size: .68rem; color: #9AA1B2; letter-spacing: .04em; }
+  .reg-val { font-weight: 800; color: #2A3346; font-size: .95rem; margin-top: 2px; }
+  .reg-val.green { color: #12A150; }
+  .reg-hint { font-size: .74rem; color: #AEB4C2; font-style: italic; min-width: 118px;
+    text-align: right; }
+
+  /* ---- badges ---- */
+  .badge { display: inline-block; padding: 3px 11px; border-radius: 20px;
+    font-size: .72rem; font-weight: 700; }
+  .badge.ok   { background:#D8F3E5; color:#0F7A54; }
+  .badge.warn { background:#FCEFCB; color:#8A5A00; }
+  .badge.risk { background:#FBDCDC; color:#B42318; }
+  .badge.none { background:#EDEFF3; color:#6B7382; }
+
+  /* ---- two column (review status + deployment summary) ---- */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+  .rev-item { display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 2px; border-bottom: 1px dashed #EDEFF3; font-size: .88rem; }
+  .rev-item:last-child { border-bottom: 0; }
+  .rev-name { color: #2A3346; font-weight: 600; }
+  .rev-stat { display: inline-flex; align-items: center; gap: 7px; font-weight: 700;
+    font-size: .8rem; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .s-complete { color:#0F7A54; } .s-complete .dot{ background:#12A150; }
+  .s-progress { color:#9A6B00; } .s-progress .dot{ background:#E0A500; }
+  .s-none { color:#78808F; } .s-none .dot{ background:#AEB4C2; }
+  .pill-stat { padding: 3px 12px; border-radius: 20px; font-size:.74rem; font-weight:700; }
+  .p-complete { background:#D8F3E5; color:#0F7A54; }
+  .p-progress { background:#FCEFCB; color:#8A5A00; }
+  .p-none { background:#EDEFF3; color:#6B7382; }
+
+  .bar-item { margin: 12px 0; }
+  .bar-top { display:flex; justify-content:space-between; font-size:.82rem;
+    color:#3A4256; margin-bottom:5px; }
+  .bar-track { height: 9px; background:#EEF0F4; border-radius:6px; overflow:hidden; }
+  .bar-fill { height:100%; background:#3B6FE0; border-radius:6px; }
+  .bar-count { font-weight:800; color:#2A3346; }
+
+  /* ---- manual entry ---- */
+  .me-tools { display:flex; gap:10px; flex-wrap:wrap; margin: 6px 0 14px; }
+  .me-btn { border:1px solid #D7DCE5; background:#FFFFFF; color:#39425C;
+    padding:8px 14px; border-radius:9px; font-size:.8rem; font-weight:700;
+    cursor:pointer; display:inline-flex; align-items:center; gap:7px; }
+  .me-btn:hover { border-color:#9FB0CE; background:#F7F9FC; }
+  .me-row { display:grid; grid-template-columns: 1.6fr 1fr 1fr 1.6fr; gap:14px;
+    align-items:center; padding:13px 4px; border-top:1px solid #EEF0F4; }
+  .me-app { font-weight:700; color:#232B3D; font-size:.9rem; }
+  .me-app small { display:block; color:#9AA1B2; font-weight:500; font-size:.74rem;
+    margin-top:2px; }
+  .me-fieldlbl { font-size:.66rem; letter-spacing:.05em; color:#9AA1B2;
+    font-weight:700; margin-bottom:4px; }
+  .me-input { width:100%; border:1px solid #D7DCE5; border-radius:8px; padding:8px 10px;
+    font-size:.86rem; color:#232B3D; background:#FFF; }
+  .me-input:focus { outline:none; border-color:#3B6FE0; box-shadow:0 0 0 3px rgba(59,111,224,.12); }
+  .me-foot { display:flex; justify-content:space-between; align-items:center;
+    margin-top:16px; gap:12px; flex-wrap:wrap; }
+  .me-note { font-size:.76rem; color:#9099AB; font-style:italic; }
+  .save-btn { background:#17203A; color:#FFF; border:0; padding:10px 20px;
+    border-radius:9px; font-weight:700; font-size:.84rem; cursor:pointer;
+    display:inline-flex; align-items:center; gap:8px; }
+  .save-btn:hover { background:#22304F; }
+
+  /* ---- collapse control ---- */
+  .collapse-x { font-size:.78rem; color:#8A91A2; cursor:pointer; user-select:none; }
+
+  /* ---- app detail (drill down) ---- */
+  .ad-head { display:flex; justify-content:space-between; align-items:flex-start; gap:14px; }
+  .ad-name { font-size:1.1rem; font-weight:800; color:#17203A; display:flex;
+    align-items:center; gap:10px; }
+  .ad-sub { font-size:.8rem; color:#8A91A2; margin-top:4px; }
+  .back-btn { border:1px solid #D7DCE5; background:#FFF; color:#39425C; padding:8px 14px;
+    border-radius:9px; font-size:.8rem; font-weight:700; cursor:pointer; }
+  .back-btn:hover { border-color:#9FB0CE; }
+  .ad-metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:18px 0; }
+  .mini { border:1px solid #E7E9EF; border-radius:10px; padding:12px 14px; background:#FBFCFE; }
+  .mini .mv { font-size:1.25rem; font-weight:800; color:#1B2439; }
+  .mini .ml { font-size:.72rem; color:#8A91A2; margin-top:3px; }
+  .kpi-tbl { width:100%; border-collapse:collapse; margin-top:8px; }
+  .kpi-tbl th { text-align:left; font-size:.72rem; color:#9AA1B2; font-weight:700;
+    padding:8px 10px; border-bottom:1px solid #EBEDF2; letter-spacing:.03em; }
+  .kpi-tbl td { padding:10px; border-bottom:1px solid #F1F2F6; font-size:.86rem; color:#2A3346; }
+  .kpi-tbl tr:last-child td { border-bottom:0; }
+  .kmark { padding:2px 10px; border-radius:20px; font-size:.72rem; font-weight:700; }
+  .k-on { background:#D8F3E5; color:#0F7A54; }
+  .k-at { background:#FCEFCB; color:#8A5A00; }
+  .k-off { background:#FBDCDC; color:#B42318; }
+
+  /* ---- cortexa placeholder ---- */
+  .ph { text-align:center; padding:60px 24px; }
+  .ph .eye { font-size:2.4rem; }
+  .ph h3 { margin:14px 0 6px; color:#17203A; }
+  .ph p { color:#8A91A2; font-size:.9rem; max-width:520px; margin:0 auto; line-height:1.6; }
+  .ph .soon { display:inline-block; margin-top:16px; background:#EAF1FE; color:#23458F;
+    padding:6px 16px; border-radius:20px; font-size:.78rem; font-weight:700; }
+
+  /* ---- misc ---- */
+  .pg-footer { text-align:center; color:#AEB4C2; font-size:.76rem; padding:26px 0 14px;
+    border-top:1px solid #ECEEF2; margin-top:22px; }
+  .bu-select-row { display:flex; align-items:center; gap:12px; margin:14px 0 2px; }
+  .bu-select-row label { font-size:.72rem; font-weight:800; letter-spacing:.1em; color:#9AA1B2; }
+  .bu-select { border:1px solid #D7DCE5; border-radius:9px; padding:9px 14px; font-size:.86rem;
+    color:#232B3D; background:#FFF; min-width:230px; font-weight:600; }
+  .fmt-panel { background:#FBFCFE; border:1px dashed #D7DCE5; border-radius:10px;
+    padding:14px 16px; margin-bottom:12px; font-size:.82rem; color:#46506B; display:none; }
+  .fmt-panel.show { display:block; }
+  .fmt-panel code { background:#EEF1F6; padding:2px 6px; border-radius:5px; font-size:.78rem; }
+  #toast { position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:#17203A; color:#FFF; padding:11px 20px; border-radius:10px; font-size:.84rem;
+    font-weight:600; opacity:0; pointer-events:none; transition:all .25s ease; z-index:99; }
+  #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  @media (max-width: 880px){ .grid4,.ad-metrics{ grid-template-columns:repeat(2,1fr);} .two-col{grid-template-columns:1fr;} .me-row{grid-template-columns:1fr 1fr;} }
+  /* ---- audit metric icon ---- */
+  .metric .mic{ display:inline-flex; margin-bottom:8px; opacity:.95; }
+  .metric .mic svg{ width:18px; height:18px; }
+  .m-blue .mic{ color:#2563EB; } .m-green .mic{ color:#12A150; }
+  .m-amber .mic{ color:#D68910; } .m-red .mic{ color:#DC3B34; } .m-purple .mic{ color:#7C3AED; }
+  /* ---- charts ---- */
+  .chart-wrap{ margin-top:12px; }
+  .c-axis{ font-size:10px; fill:#9AA1B2; }
+  .c-lbl{ font-size:11px; fill:#3A4256; }
+  .c-val{ font-size:11px; font-weight:700; fill:#2A3346; }
+  .c-leg{ font-size:11px; fill:#5A6273; }
+  /* ---- intent columns ---- */
+  .intent-head{ font-weight:800; color:#1B2439; font-size:.92rem; display:flex; align-items:center; gap:8px; }
+  .intent-desc{ font-size:.78rem; color:#8A91A2; margin:5px 0 4px; line-height:1.5; min-height:52px; }
+  /* ---- audit tables ---- */
+  .aud-tbl{ width:100%; border-collapse:collapse; margin-top:12px; }
+  .aud-tbl th{ text-align:left; font-size:.68rem; color:#9AA1B2; font-weight:700;
+    padding:10px 12px; border-bottom:1px solid #EBEDF2; letter-spacing:.05em; }
+  .aud-tbl td{ padding:13px 12px; border-bottom:1px solid #F1F2F6; font-size:.84rem;
+    color:#3A4353; vertical-align:top; }
+  .aud-tbl tr:last-child td{ border-bottom:0; }
+  .aud-tbl td.mono{ font-family:"SF Mono",Consolas,"Liberation Mono",monospace;
+    color:#9099AB; font-size:.78rem; white-space:nowrap; }
+  .aud-tbl td.strong{ font-weight:700; color:#1B2439; }
+  .aud-tbl tr.click{ cursor:pointer; } .aud-tbl tr.click:hover td{ background:#F7FAFF; }
+  .pill{ display:inline-block; padding:3px 11px; border-radius:20px; font-size:.72rem; font-weight:700; }
+  .sev-high{ background:#FBDCDC; color:#B42318; }
+  .sev-med{ background:#FCEFCB; color:#8A5A00; }
+  .sev-low{ background:#E4ECFB; color:#2557C7; }
+  .stt{ font-weight:700; font-size:.8rem; }
+  .st-open{ color:#DC3B34; } .st-investigating{ color:#B7791F; }
+  .st-resolved{ color:#0F7A54; } .st-monitoring{ color:#2563EB; }
+  .vred{ color:#DC3B34; font-weight:700; } .vgreen{ color:#12A150; font-weight:700; }
+  .gscore{ display:inline-block; padding:3px 12px; border-radius:20px; font-size:.76rem; font-weight:700; }
+  .gscore.ok{ background:#D8F3E5; color:#0F7A54; } .gscore.warn{ background:#FCEFCB; color:#8A5A00; }
+  .gscore.risk{ background:#FBDCDC; color:#B42318; } .gscore.none{ background:#EDEFF3; color:#6B7382; }
+</style>
+
+<div id="cx-root">
+  <div class="pg-header">
+    <div>
+      <div class="pg-title">AI Oversight, Evidence &amp; Value Realization</div>
+      <div class="pg-sub">Select a dashboard view. Drill down from Enterprise → Business Unit → Application.</div>
+    </div>
+    <div class="pg-dash-toggle">
+      <button class="dash-btn active" data-dash="process"><span class="ic">⚙</span> Process Governance Dashboard</button>
+      <button class="dash-btn" data-dash="cortexa"><span class="ic">◎</span> Cortexa™ AI Audit Dashboard</button>
+    </div>
+  </div>
+  <div id="pg-body"></div>
+  <div class="pg-footer">AI Maturity Governance — Powered By Cortexa™</div>
+</div>
+<div id="toast"></div>
+
+<script>
+const DATA = __DATA_JSON__;
+const S = { dash: "process", level: "enterprise", app: null, bu: "all",
+            formula: false, fmt: false,
+            manual: {} };
+
+// seed manual-entry state from derived defaults
+DATA.apps.forEach(a => {
+  if (a.deployed) S.manual[a.id] = { users: a.activeUsers, uptime: a.uptime, notes: "" };
+});
+
+const esc = s => String(s == null ? "" : s)
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
+function badge(a){ return '<span class="badge '+a.badgeCls+'">'+esc(a.badge)+'</span>'; }
+function hs(a){ return a.healthScore==null ? "—" : a.healthScore+"%"; }
+function up(a){ return a.uptime==null ? "—" : a.uptime+"%"; }
+
+function metric(num, lbl, sub, tone){
+  return '<div class="metric m-'+tone+'"><div class="num">'+num+'</div>'+
+    '<div class="lbl">'+lbl+'</div>'+(sub?'<div class="sub">'+sub+'</div>':'')+'</div>';
+}
+
+function formulaBlock(){
+  return '<div class="formula'+(S.formula?' open':'')+'" id="formula">'+
+    '<div class="formula-head" onclick="toggleFormula()">'+
+      '<span class="lft"><span>ⓘ</span> Governance Health Score — Formula &amp; Thresholds</span>'+
+      '<span>'+(S.formula?'▲':'▼')+'</span></div>'+
+    '<div class="formula-body">'+
+      'The <b>Governance Health Score</b> is a weighted blend of four operational signals, '+
+      'each measured 0–100%:<br><br>'+
+      '<b>System Uptime</b> × 0.35 &nbsp;+&nbsp; <b>Policy Compliance</b> × 0.35 &nbsp;+&nbsp; '+
+      '<b>Data Freshness</b> × 0.20 &nbsp;+&nbsp; <b>Human Override Rate</b> × 0.10 '+
+      '&nbsp;=&nbsp; score (0–100).<br><br>'+
+      '<span class="thr t-ok">Healthy ≥ 85%</span>'+
+      '<span class="thr t-warn">Needs Attention 70–84%</span>'+
+      '<span class="thr t-risk">At Risk &lt; 70%</span><br><br>'+
+      '<b>Avg System Uptime</b> is averaged across actively deployed applications. '+
+      '<b>Governance Reviews Completed</b> counts applications whose evidence attestations are '+
+      'substantially complete (≥ 60% approved or submitted).'+
+    '</div></div>';
+}
+
+function banner(){
+  if (S.dash === "cortexa"){
+    return '<div class="pg-banner"><b>Cortexa™ AI Audit Dashboard:</b> Independent, system-of-record '+
+      'audit view of automated control evidence, model lineage, and continuous assurance signals.</div>';
+  }
+  return '<div class="pg-banner"><b>Process Governance Dashboard:</b> Manually entered and reported '+
+    'governance data — application status, deployment info, active users, uptime, and governance '+
+    'review completion. Supports manual data entry and upload.</div>';
+}
+
+function levelPills(){
+  const mk = (k,t)=> '<button class="lvl-pill'+(S.level===k?' active':'')+'" onclick="setLevel(\''+k+'\')">'+t+'</button>';
+  return '<div class="lvl-row"><span class="lvl-lbl">LEVEL:</span><span class="lvl-pills">'+
+    mk("enterprise","Enterprise")+mk("bu","Business Unit")+mk("application","Application")+
+    '</span></div>';
+}
+
+// -------------------------------------------------------------- ENTERPRISE
+function enterpriseView(){
+  const e = DATA.enterprise;
+  let h = formulaBlock();
+  h += '<div class="grid4">'+
+    metric(e.total, "Total AI Applications", "", "blue")+
+    metric(e.inProduction, "In Production", "Apps actively serving users", "green")+
+    metric(e.underReview, "Under Governance Review", "Awaiting sign-off", "amber")+
+    metric(e.pending, "Pending Deployment", "Pre-deployment stage", "blue")+
+    '</div>';
+  h += '<div class="grid4">'+
+    metric(e.reviewsCompleted+" / "+e.reviewsTotal, "Governance Reviews Completed", e.reviewsPct+"% complete across portfolio", "green")+
+    metric(e.openCompliance, "Open Compliance Issues", "Across all active apps", "red")+
+    metric(e.avgUptime+"%", "Avg System Uptime (Active Apps)", esc(e.activeNames), "green")+
+    metric(e.avgHealth+"%", "Avg Governance Health Score", "Across "+e.activeCount+" active apps (formula above)", "blue")+
+    '</div>';
+
+  // registry
+  h += '<div class="card sec-card"><div class="sec-title">Enterprise Application Registry — All AI Applications</div>'+
+    '<div class="sec-hint">Double-click any row to drill into that application\'s detailed governance view.</div>';
+  DATA.apps.forEach(a=>{
+    h += '<div class="reg-row" ondblclick="drill(\''+a.id+'\')">'+
+      '<div class="reg-main"><div class="reg-name">'+esc(a.name)+' '+badge(a)+'</div>'+
+        '<div class="reg-sub">'+esc(a.bu)+' · '+esc(a.code)+' · '+esc(a.stage)+'</div></div>'+
+      '<div class="reg-right">'+
+        '<div class="reg-col"><div class="reg-lbl">Deployment</div><div class="reg-val">'+esc(a.deployment)+'</div></div>'+
+        '<div class="reg-col"><div class="reg-lbl">Health Score</div><div class="reg-val green">'+hs(a)+'</div></div>'+
+        '<div class="reg-hint">Double-click to drill down</div>'+
+      '</div></div>';
+  });
+  h += '</div>';
+
+  // review status + deployment summary
+  h += '<div class="two-col">';
+  h += '<div class="card sec-card"><div class="sec-title">Governance Review Status by Application</div>';
+  DATA.apps.forEach(a=>{
+    const map = {"Complete":["s-complete","p-complete","Complete"],
+                 "In Progress":["s-progress","p-progress","In Progress"],
+                 "Not Started":["s-none","p-none","Not Started"]};
+    const m = map[a.reviewStatus] || map["Not Started"];
+    h += '<div class="rev-item"><span class="rev-name"><span class="rev-stat '+m[0]+'"><span class="dot"></span></span> '+esc(a.name)+'</span>'+
+      '<span class="pill-stat '+m[1]+'">'+m[2]+'</span></div>';
+  });
+  h += '</div>';
+
+  const maxc = Math.max.apply(null, DATA.deploymentSummary.map(x=>x.count).concat([1]));
+  h += '<div class="card sec-card"><div class="sec-title">Deployment Status Summary</div>';
+  DATA.deploymentSummary.forEach(d=>{
+    h += '<div class="bar-item"><div class="bar-top"><span>'+esc(d.label)+'</span><span class="bar-count">'+d.count+'</span></div>'+
+      '<div class="bar-track"><div class="bar-fill" style="width:'+Math.round(100*d.count/maxc)+'%"></div></div></div>';
+  });
+  h += '</div></div>';
+
+  // manual entry
+  h += manualEntry();
+  return h;
+}
+
+function manualEntry(){
+  let h = '<div class="card sec-card" id="manual-card">'+
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;">'+
+    '<div><div class="sec-title">Manual Governance Data Entry</div>'+
+    '<div class="sec-hint">Enter or upload manually tracked governance data to supplement automated metrics.</div></div>'+
+    '<span class="collapse-x" onclick="toggleManual()">Collapse ▾</span></div>'+
+    '<div id="manual-inner">'+
+    '<div class="fmt-panel'+(S.fmt?' show':'')+'" id="fmt-panel">'+
+      '<b>Template columns:</b> <code>app_code</code>, <code>app_name</code>, <code>business_unit</code>, '+
+      '<code>reported_active_users</code> (integer), <code>reported_uptime_pct</code> (0–100), <code>notes</code>. '+
+      'One row per application. Save the file and re-upload via <b>Upload CSV / Excel</b>.</div>'+
+    '<div class="me-tools">'+
+      '<label class="me-btn" style="margin:0;"><span>⬆</span> Upload CSV / Excel'+
+        '<input type="file" accept=".csv" style="display:none" onchange="onUpload(event)"></label>'+
+      '<button class="me-btn" onclick="downloadTemplate()"><span>⬇</span> Download Template</button>'+
+      '<button class="me-btn" onclick="toggleFmt()"><span>◉</span> View Template Format</button>'+
+    '</div>';
+  DATA.apps.filter(a=>a.deployed).forEach(a=>{
+    const m = S.manual[a.id] || {users:"",uptime:"",notes:""};
+    h += '<div class="me-row">'+
+      '<div class="me-app">'+esc(a.name)+'<small>'+esc(a.bu)+'</small></div>'+
+      '<div><div class="me-fieldlbl">REPORTED ACTIVE USERS</div>'+
+        '<input class="me-input" type="number" value="'+esc(m.users)+'" oninput="setManual(\''+a.id+'\',\'users\',this.value)"></div>'+
+      '<div><div class="me-fieldlbl">REPORTED UPTIME %</div>'+
+        '<input class="me-input" type="number" step="0.1" value="'+esc(m.uptime)+'" oninput="setManual(\''+a.id+'\',\'uptime\',this.value)"></div>'+
+      '<div><div class="me-fieldlbl">NOTES</div>'+
+        '<input class="me-input" type="text" placeholder="Any governance notes…" value="'+esc(m.notes)+'" oninput="setManual(\''+a.id+'\',\'notes\',this.value)"></div>'+
+      '</div>';
+  });
+  h += '<div class="me-foot"><span class="me-note">Changes are saved per session. For persistent records, download the completed template.</span>'+
+    '<button class="save-btn" onclick="saveManual()"><span>✔</span> Save Manual Data</button></div>';
+  h += '</div></div>';
+  return h;
+}
+
+// -------------------------------------------------------------- BUSINESS UNIT
+function buView(){
+  let h = formulaBlock();
+  h += '<div class="bu-select-row"><label>BUSINESS UNIT:</label>'+
+    '<select class="bu-select" onchange="setBU(this.value)">'+
+    '<option value="all"'+(S.bu==="all"?" selected":"")+'>All Business Units</option>'+
+    DATA.businessUnits.map(b=>'<option value="'+esc(b.name)+'"'+(S.bu===b.name?" selected":"")+'>'+esc(b.name)+'</option>').join("")+
+    '</select></div>';
+
+  const list = S.bu==="all" ? DATA.apps : DATA.apps.filter(a=>a.bu===S.bu);
+  const active = list.filter(a=>a.deployed).length;
+  const revC = list.filter(a=>a.reviewStatus==="Complete").length;
+  const comp = list.reduce((s,a)=>s+a.compliance,0);
+
+  h += '<div class="grid4">'+
+    metric(list.length, "Applications in BU", "", "blue")+
+    metric(active, "Active", "", "green")+
+    metric(revC+" / "+list.length, "Governance Reviews Completed", "", "purple")+
+    metric(comp, "Open Compliance Issues", "", "amber")+
+    '</div>';
+
+  const title = S.bu==="all" ? "Applications — All Business Units" : "Applications — "+esc(S.bu);
+  h += '<div class="card sec-card"><div class="sec-title">'+title+'</div>'+
+    '<div class="sec-hint">Double-click any row to view application-level governance detail.</div>';
+  list.forEach(a=>{
+    h += '<div class="reg-row" ondblclick="drill(\''+a.id+'\')">'+
+      '<div class="reg-main"><div class="reg-name">'+esc(a.name)+' '+badge(a)+'</div>'+
+        '<div class="reg-sub">'+esc(a.bu)+' · '+esc(a.code)+' · '+esc(a.stage)+'</div></div>'+
+      '<div class="reg-right">'+
+        '<div class="reg-col"><div class="reg-lbl">Uptime</div><div class="reg-val">'+up(a)+'</div></div>'+
+        '<div class="reg-col"><div class="reg-lbl">Health Score</div><div class="reg-val green">'+hs(a)+'</div></div>'+
+      '</div></div>';
+  });
+  h += '</div>';
+  return h;
+}
+
+// -------------------------------------------------------------- APPLICATION
+function applicationView(){
+  let h = formulaBlock();
+  const app = DATA.apps.find(a=>a.id===S.app);
+  if (app){ h += appDetail(app); }
+
+  h += '<div class="card sec-card"><div class="sec-title">'+
+    (app ? "All Applications" : "Select an application by double-clicking a row in Enterprise or Business Unit view.")+
+    '</div>';
+  DATA.apps.forEach(a=>{
+    const sel = a.id===S.app;
+    h += '<div class="reg-row" ondblclick="drill(\''+a.id+'\')" style="'+(sel?'border-color:#B9C6E4;background:#F7FAFF;':'')+'">'+
+      '<div class="reg-main"><div class="reg-name">'+esc(a.name)+' '+badge(a)+'</div>'+
+        '<div class="reg-sub">'+esc(a.bu)+' · '+esc(a.code)+' · '+esc(a.stage)+'</div></div>'+
+      '<div class="reg-right">'+
+        '<div class="reg-col"><div class="reg-lbl">Health Score</div><div class="reg-val green">'+hs(a)+'</div></div>'+
+      '</div></div>';
+  });
+  h += '</div>';
+  return h;
+}
+
+function appDetail(a){
+  let h = '<div class="card sec-card">';
+  h += '<div class="ad-head"><div><div class="ad-name">'+esc(a.name)+' '+badge(a)+'</div>'+
+    '<div class="ad-sub">'+esc(a.bu)+' · '+esc(a.code)+' · '+esc(a.stage)+' · Owner: '+esc(a.owner)+'</div></div>'+
+    '<button class="back-btn" onclick="clearApp()">← Back to list</button></div>';
+
+  h += '<div class="ad-metrics">'+
+    '<div class="mini"><div class="mv">'+hs(a)+'</div><div class="ml">Governance Health Score</div></div>'+
+    '<div class="mini"><div class="mv">'+up(a)+'</div><div class="ml">System Uptime</div></div>'+
+    '<div class="mini"><div class="mv">'+(a.activeUsers==null?"—":a.activeUsers)+'</div><div class="ml">Reported Active Users</div></div>'+
+    '<div class="mini"><div class="mv">'+esc(a.riskTier)+'</div><div class="ml">Risk Tier</div></div>'+
+    '</div>';
+
+  if (a.healthInputs){
+    const hi = a.healthInputs;
+    h += '<div class="ad-metrics" style="margin-top:0">'+
+      '<div class="mini"><div class="mv">'+hi.uptime+'%</div><div class="ml">System Uptime · ×0.35</div></div>'+
+      '<div class="mini"><div class="mv">'+hi.policy+'%</div><div class="ml">Policy Compliance · ×0.35</div></div>'+
+      '<div class="mini"><div class="mv">'+hi.freshness+'%</div><div class="ml">Data Freshness · ×0.20</div></div>'+
+      '<div class="mini"><div class="mv">'+hi.override+'%</div><div class="ml">Human Override · ×0.10</div></div>'+
+      '</div>';
+  }
+  if (a.kpis && a.kpis.length){
+    h += '<table class="kpi-tbl"><thead><tr><th>KPI</th><th>Current</th><th>Target</th><th>Status</th></tr></thead><tbody>';
+    a.kpis.forEach(k=>{
+      const cls = k.status==="On Track"?"k-on":k.status==="At Risk"?"k-at":"k-off";
+      h += '<tr><td>'+esc(k.name)+'</td><td>'+esc(k.current)+' '+esc(k.unit)+'</td>'+
+        '<td>'+esc(k.target)+' '+esc(k.unit)+'</td><td><span class="kmark '+cls+'">'+esc(k.status)+'</span></td></tr>';
+    });
+    h += '</tbody></table>';
+  } else {
+    h += '<div class="sec-hint">Pre-deployment — no live oversight KPIs yet. This use case is still under governance review.</div>';
+  }
+
+  h += '<div class="me-foot" style="border-top:1px solid #EEF0F4;padding-top:12px;">'+
+    '<span class="me-note">Evidence: '+a.evidence.approved+' / '+a.evidence.total+' approved &nbsp;·&nbsp; '+
+    'Incidents: '+a.incidents.active+' active of '+a.incidents.total+' &nbsp;·&nbsp; Review: '+esc(a.reviewStatus)+'</span>'+
+    '<span class="rev-stat '+(a.reviewStatus==="Complete"?"s-complete":a.reviewStatus==="In Progress"?"s-progress":"s-none")+'">'+
+    '<span class="dot"></span> Governance review '+esc(a.reviewStatus)+'</span></div>';
+  h += '</div>';
+  return h;
+}
+
+// -------------------------------------------------------------- cortexa (audit)
+const IC = {
+  activity:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',
+  users:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  layers:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>',
+  shield:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+  bolt:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+  dollar:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+  trend:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
+  compass:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>'
+};
+
+function fmtInt(n){ return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+function tk1(n){ return (n/1e6).toFixed(1)+"M"; }
+function tk2(n){ return (n/1e6).toFixed(2)+"M"; }
+
+function ametric(icon, num, lbl, sub, tone){
+  return '<div class="metric m-'+tone+'"><div class="mic">'+icon+'</div>'+
+    '<div class="num">'+num+'</div><div class="lbl">'+lbl+'</div>'+
+    (sub ? '<div class="sub">'+sub+'</div>' : '')+'</div>';
+}
+function chartCard(title, hint, svg){
+  return '<div class="card sec-card"><div class="sec-title">'+esc(title)+'</div>'+
+    (hint ? '<div class="sec-hint">'+esc(hint)+'</div>' : '')+
+    '<div class="chart-wrap">'+svg+'</div></div>';
+}
+
+// ---- tiny dependency-free SVG charts ----
+function _svg(w, h, inner){
+  return '<svg viewBox="0 0 '+w+' '+h+'" width="100%" preserveAspectRatio="xMidYMid meet" style="display:block;height:auto">'+inner+'</svg>';
+}
+function _tx(x, y, s, cls, anchor){
+  return '<text x="'+x+'" y="'+y+'" class="'+(cls||'')+'" text-anchor="'+(anchor||'start')+'">'+esc(s)+'</text>';
+}
+function _wrap(x, y, label, maxChars, cls, anchor){
+  if (String(label).length <= maxChars) return _tx(x, y, label, cls, anchor);
+  const words = String(label).split(' '); let l1='', l2='';
+  words.forEach(w=>{ if (!l2 && (l1+' '+w).trim().length <= maxChars) l1=(l1+' '+w).trim(); else l2=(l2+' '+w).trim(); });
+  return '<text x="'+x+'" y="'+(y-6)+'" class="'+cls+'" text-anchor="'+anchor+'">'+esc(l1)+
+    '<tspan x="'+x+'" dy="13">'+esc(l2)+'</tspan></text>';
+}
+
+function hbarChart(data, opt){
+  opt = opt || {};
+  const W=560, rowH=opt.rowH||34, padL=opt.padL||150, padR=46, padT=8, padB=30;
+  const H = padT+padB + data.length*rowH;
+  const max = opt.max || Math.max.apply(null, data.map(function(d){return d.value;}).concat([1]));
+  const plotW = W-padL-padR, col = opt.color||'#2563EB', ticks = opt.ticks||4;
+  let s='';
+  for (let i=0;i<=ticks;i++){
+    const v=max*i/ticks, x=padL+plotW*i/ticks;
+    s += '<line x1="'+x+'" y1="'+padT+'" x2="'+x+'" y2="'+(H-padB)+'" stroke="#EEF0F4" stroke-dasharray="3 3"/>';
+    s += _tx(x, H-padB+16, Math.round(v)+(opt.unit||''), 'c-axis', 'middle');
+  }
+  data.forEach(function(d,i){
+    const y=padT+i*rowH+3, bh=rowH-14, bw=plotW*(d.value/max);
+    s += _wrap(padL-10, y+bh/2+4, d.label, 20, 'c-lbl', 'end');
+    s += '<rect x="'+padL+'" y="'+y+'" width="'+Math.max(bw,1)+'" height="'+bh+'" rx="3" fill="'+col+'"/>';
+    s += _tx(padL+bw+7, y+bh/2+4, d.value+(opt.vunit||''), 'c-val', 'start');
+  });
+  return _svg(W, H, s);
+}
+
+function lineChart(vals, opt){
+  opt = opt || {};
+  const W=560, H=opt.h||210, padL=54, padR=18, padT=14, padB=30;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+  const max = opt.max || Math.max.apply(null, vals)*1.1, col = opt.color||'#7C3AED';
+  const xs=function(i){return padL+plotW*i/(vals.length-1);}, ys=function(v){return padT+plotH*(1-v/max);};
+  const yt = opt.yTicks||4; let s='';
+  for (let i=0;i<=yt;i++){
+    const v=max*i/yt, y=ys(v);
+    s += '<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="#EEF0F4"/>';
+    s += _tx(padL-8, y+4, (opt.yfmt?opt.yfmt(v):Math.round(v)), 'c-axis', 'end');
+  }
+  let path='M '+xs(0)+' '+ys(vals[0]);
+  vals.forEach(function(v,i){ if(i) path += ' L '+xs(i)+' '+ys(v); });
+  s += '<path d="'+path+' L '+xs(vals.length-1)+' '+(padT+plotH)+' L '+xs(0)+' '+(padT+plotH)+' Z" fill="'+col+'" opacity="0.10"/>';
+  s += '<path d="'+path+'" fill="none" stroke="'+col+'" stroke-width="2.5"/>';
+  vals.forEach(function(v,i){ s += '<circle cx="'+xs(i)+'" cy="'+ys(v)+'" r="3.4" fill="'+col+'"/>'; });
+  (opt.xLabels||vals.map(function(_,i){return 'W'+(i+1);})).forEach(function(lb,i){ s += _tx(xs(i), H-8, lb, 'c-axis', 'middle'); });
+  if (opt.yLabel) s += '<text x="14" y="'+(padT+plotH/2)+'" class="c-axis" text-anchor="middle" transform="rotate(-90 14 '+(padT+plotH/2)+')">'+esc(opt.yLabel)+'</text>';
+  return _svg(W, H, s);
+}
+
+function groupedBars(cats, sA, sB, opt){
+  opt = opt || {};
+  const W=560, H=opt.h||230, padL=46, padR=14, padT=14, padB=48;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+  const max = opt.max || Math.max.apply(null, sA.concat(sB))*1.15;
+  const n=cats.length, groupW=plotW/n, barW=Math.min(15, groupW/3);
+  const ys=function(v){return padT+plotH*(1-v/max);}, yt=opt.yTicks||4; let s='';
+  for (let i=0;i<=yt;i++){
+    const v=max*i/yt, y=ys(v);
+    s += '<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="#EEF0F4"/>';
+    s += _tx(padL-8, y+4, Math.round(v), 'c-axis', 'end');
+  }
+  cats.forEach(function(c,i){
+    const cx=padL+groupW*i+groupW/2, x1=cx-barW-2, x2=cx+2;
+    s += '<rect x="'+x1+'" y="'+ys(sA[i])+'" width="'+barW+'" height="'+(padT+plotH-ys(sA[i]))+'" rx="2" fill="'+(opt.colorA||'#2563EB')+'"/>';
+    s += '<rect x="'+x2+'" y="'+ys(sB[i])+'" width="'+barW+'" height="'+(padT+plotH-ys(sB[i]))+'" rx="2" fill="'+(opt.colorB||'#7C3AED')+'"/>';
+    s += _tx(cx, H-24, c, 'c-axis', 'middle');
+  });
+  s += '<rect x="'+padL+'" y="'+(H-14)+'" width="10" height="10" rx="2" fill="'+(opt.colorA||'#2563EB')+'"/>'+_tx(padL+15, H-5, opt.labelA||'A', 'c-leg', 'start');
+  const lx=padL+150;
+  s += '<rect x="'+lx+'" y="'+(H-14)+'" width="10" height="10" rx="2" fill="'+(opt.colorB||'#7C3AED')+'"/>'+_tx(lx+15, H-5, opt.labelB||'B', 'c-leg', 'start');
+  if (opt.yLabel) s += '<text x="12" y="'+(padT+plotH/2)+'" class="c-axis" text-anchor="middle" transform="rotate(-90 12 '+(padT+plotH/2)+')">'+esc(opt.yLabel)+'</text>';
+  return _svg(W, H, s);
+}
+
+function vbars(cats, vals, opt){
+  opt = opt || {};
+  const W=560, H=opt.h||230, padL=54, padR=14, padT=14, padB=40;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+  const max = opt.max || Math.max.apply(null, vals)*1.15;
+  const n=cats.length, groupW=plotW/n, barW=Math.min(40, groupW*0.55);
+  const ys=function(v){return padT+plotH*(1-v/max);}, yt=opt.yTicks||4; let s='';
+  for (let i=0;i<=yt;i++){
+    const v=max*i/yt, y=ys(v);
+    s += '<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="#EEF0F4"/>';
+    s += _tx(padL-8, y+4, (opt.yfmt?opt.yfmt(v):Math.round(v)), 'c-axis', 'end');
+  }
+  cats.forEach(function(c,i){
+    const cx=padL+groupW*i+groupW/2;
+    s += '<rect x="'+(cx-barW/2)+'" y="'+ys(vals[i])+'" width="'+barW+'" height="'+(padT+plotH-ys(vals[i]))+'" rx="3" fill="'+(opt.color||'#12A150')+'"/>';
+    s += _tx(cx, H-16, c, 'c-axis', 'middle');
+  });
+  if (opt.yLabel) s += '<text x="14" y="'+(padT+plotH/2)+'" class="c-axis" text-anchor="middle" transform="rotate(-90 14 '+(padT+plotH/2)+')">'+esc(opt.yLabel)+'</text>';
+  return _svg(W, H, s);
+}
+
+// ---- cortexa dashboard (level dispatch) ----
+function cortexaView(){
+  if (S.level === "bu") return cortexaBU();
+  if (S.level === "application") return cortexaApplication();
+  return cortexaEnterprise();
+}
+function cortexaBU(){
+  let h = '';
+  h += '<div class="bu-select-row"><label>BUSINESS UNIT:</label>'+
+    '<select class="bu-select" onchange="setBU(this.value)">'+
+    '<option value="all"'+(S.bu==="all"?" selected":"")+'>All Business Units</option>'+
+    DATA.businessUnits.map(function(b){ return '<option value="'+esc(b.name)+'"'+(S.bu===b.name?" selected":"")+'>'+esc(b.name)+'</option>'; }).join("")+
+    '</select></div>';
+
+  const list = (S.bu==="all") ? DATA.audit.apps : DATA.audit.apps.filter(function(a){ return a.bu===S.bu; });
+  const dep = list.filter(function(a){ return a.deployed; });
+  const users = dep.reduce(function(s,a){ return s+a.uniqueUsers; }, 0);
+  const sess = dep.reduce(function(s,a){ return s+a.sessions; }, 0);
+  const toks = dep.reduce(function(s,a){ return s+a.tokens; }, 0);
+  const cost = dep.reduce(function(s,a){ return s+a.cost; }, 0);
+  const viol = list.reduce(function(s,a){ return s+a.violations; }, 0);
+
+  h += '<div class="grid4">'+
+    metric(list.length, "Applications in BU", "", "blue")+
+    metric(fmtInt(users), "Unique Active Users This Week", "Unique individuals", "green")+
+    metric(fmtInt(sess), "Total Sessions This Week", "", "purple")+
+    metric(viol, "Policy Violations This Week", "", "red")+
+    '</div>';
+  h += '<div class="grid4">'+
+    metric(tk2(toks), "Token Usage This Week", "", "purple")+
+    metric("$"+fmtInt(cost), "Actual Cost This Week", "", "blue")+
+    '</div>';
+
+  const title = (S.bu==="all")
+    ? "Applications — All Business Units · AI Audit Summary"
+    : "Applications — "+esc(S.bu)+" · AI Audit Summary";
+  h += '<div class="card sec-card"><div class="sec-title">'+title+'</div>'+
+    '<div class="sec-hint">Double-click any row to drill into that application\'s detailed audit view.</div>';
+  list.forEach(function(a){
+    h += '<div class="reg-row click" ondblclick="drill(\''+a.id+'\')">'+
+      '<div class="reg-main"><div class="reg-name">'+esc(a.name)+' '+badge(a)+'</div>'+
+        '<div class="reg-sub">'+esc(a.bu)+' · '+esc(a.code)+' · '+esc(a.stage)+'</div></div>'+
+      '<div class="reg-right">'+
+        '<div class="reg-col"><div class="reg-lbl">Tokens This Week</div><div class="reg-val">'+(a.deployed?tk2(a.tokens):'—')+'</div></div>'+
+        '<div class="reg-col"><div class="reg-lbl">Cost This Week</div><div class="reg-val">'+(a.deployed?'$'+fmtInt(a.cost):'—')+'</div></div>'+
+        '<div class="reg-col"><div class="reg-lbl">Violations</div><div class="reg-val '+(a.violations>0?'vred':'vgreen')+'">'+a.violations+'</div></div>'+
+        '<div class="reg-col"><div class="reg-lbl">Health Score</div><div class="reg-val green">'+(a.deployed?a.healthScore+'%':'—')+'</div></div>'+
+        '<div class="reg-hint">Double-click to drill down</div>'+
+      '</div></div>';
+  });
+  h += '</div>';
+  return h;
+}
+
+function cortexaApplication(){
+  const app = DATA.audit.apps.find(function(a){ return a.id===S.app; });
+  let h = '';
+  if (app){ h += appAuditDetail(app); }
+  h += '<div class="card sec-card">';
+  if (app){
+    h += '<div class="sec-title">All Applications</div>';
+  } else {
+    h += '<div style="text-align:center;color:#8A91A2;font-size:.9rem;padding:16px 0 6px;">Select an application by double-clicking a row in Enterprise or Business Unit view.</div>';
+  }
+  DATA.audit.apps.forEach(function(a){
+    const sel = a.id===S.app;
+    h += '<div class="reg-row click" ondblclick="drill(\''+a.id+'\')" style="'+(sel?'border-color:#B9C6E4;background:#F7FAFF;':'')+'">'+
+      '<div class="reg-main"><div class="reg-name">'+esc(a.name)+' '+badge(a)+'</div>'+
+        '<div class="reg-sub">'+esc(a.bu)+' · '+esc(a.code)+' · '+esc(a.stage)+'</div></div>'+
+      '<div class="reg-right">'+
+        '<div class="reg-col"><div class="reg-lbl">Health Score</div><div class="reg-val green">'+(a.deployed?a.healthScore+'%':'—')+'</div></div>'+
+        '<div class="reg-hint">Double-click to drill down</div>'+
+      '</div></div>';
+  });
+  h += '</div>';
+  return h;
+}
+
+function appAuditDetail(a){
+  let h = '<div class="card sec-card">';
+  h += '<div class="ad-head"><div><div class="ad-name">'+esc(a.name)+' '+badge(a)+'</div>'+
+    '<div class="ad-sub">'+esc(a.bu)+' · '+esc(a.code)+' · '+esc(a.stage)+'</div></div>'+
+    '<button class="back-btn" onclick="clearApp()">← Back to list</button></div>';
+  if (!a.deployed){
+    h += '<div class="sec-hint" style="margin-top:14px">Pre-deployment — no live audit telemetry yet. This use case is still under governance review.</div></div>';
+    return h;
+  }
+  h += '<div class="ad-metrics">'+
+    '<div class="mini"><div class="mv">'+fmtInt(a.uniqueUsers)+'</div><div class="ml">Unique Users (This Week)</div></div>'+
+    '<div class="mini"><div class="mv">'+fmtInt(a.sessions)+'</div><div class="ml">Sessions (This Week)</div></div>'+
+    '<div class="mini"><div class="mv">'+tk2(a.tokens)+'</div><div class="ml">Token Usage (This Week)</div></div>'+
+    '<div class="mini"><div class="mv">$'+fmtInt(a.cost)+'</div><div class="ml">Actual Cost (This Week)</div></div>'+
+    '</div>';
+  h += '<div class="ad-metrics" style="margin-top:0">'+
+    '<div class="mini"><div class="mv '+(a.violations>0?'vred':'vgreen')+'">'+a.violations+'</div><div class="ml">Policy Violations (This Week)</div></div>'+
+    '<div class="mini"><div class="mv">'+a.healthScore+'%</div><div class="ml">Governance Score</div></div>'+
+    '</div>';
+  const rows = DATA.audit.log.filter(function(r){ return r.app===a.name; });
+  if (rows.length){
+    h += '<div class="sec-title" style="margin-top:16px;font-size:.94rem">Recent Audit Signals</div>'+
+      '<table class="aud-tbl"><thead><tr><th>TIMESTAMP</th><th>SIGNAL TYPE</th><th>DETAIL</th><th>SEVERITY</th><th>STATUS</th></tr></thead><tbody>';
+    rows.forEach(function(r){
+      h += '<tr><td class="mono">'+esc(r.ts)+'</td><td>'+esc(r.type)+'</td><td>'+esc(r.detail)+'</td>'+
+        '<td><span class="pill '+sevCls(r.severity)+'">'+esc(r.severity)+'</span></td>'+
+        '<td><span class="stt '+statCls(r.status)+'">'+esc(r.status)+'</span></td></tr>';
+    });
+    h += '</tbody></table>';
+  } else {
+    h += '<div class="sec-hint" style="margin-top:14px">No audit signals recorded for this application in the last 7 days.</div>';
+  }
+  h += '</div>';
+  return h;
+}
+
+function sevCls(s){ return s==="High" ? "sev-high" : s==="Medium" ? "sev-med" : "sev-low"; }
+function statCls(s){ return s==="Open" ? "st-open" : s==="Investigating" ? "st-investigating" : s==="Monitoring" ? "st-monitoring" : "st-resolved"; }
+
+function cortexaEnterprise(){
+  const A = DATA.audit; let h='';
+  h += '<div class="grid4">'+
+    ametric(IC.activity, fmtInt(A.apiRequests), "Total API Requests This Week", "Across all "+A.activeCount+" active applications", "blue")+
+    ametric(IC.users, fmtInt(A.uniqueUsers), "Unique Active Users This Week", "Unique individuals (not sessions)", "green")+
+    ametric(IC.layers, fmtInt(A.sessions), "Total Sessions This Week", "One user may have multiple sessions", "purple")+
+    ametric(IC.shield, A.violations, "Policy Violations This Week", "↑ from "+A.violationsPrev+" last week — requires review", "red")+
+    '</div>';
+  h += '<div class="grid4">'+
+    ametric(IC.bolt, tk1(A.tokens), "Token Usage This Week", "Across all active applications", "purple")+
+    ametric(IC.dollar, "$"+fmtInt(A.cost), "Actual Cost This Week", "Compute + inference + storage", "blue")+
+    ametric(IC.trend, "$"+fmtInt(A.projectedCost), "Projected Cost — Next 6 Months", A.projWindow+" (all apps)", "amber")+
+    ametric(IC.compass, A.topicCount+" topics", "Topic Diversity Index", A.topicApp, "blue")+
+    '</div>';
+  h += '<div class="card sec-card"><div class="sec-title">Chatbot Intent Analysis — '+esc(A.intent.app)+' (Last 30 Days)</div>'+
+    '<div class="sec-hint">Understand how employees are using the chatbot: business-related queries (green) vs. potential personal use (red). Source: prompt intent classification model.</div>'+
+    '<div class="two-col" style="margin-top:12px">'+
+      '<div><div class="intent-head"><span class="dot" style="background:#12A150"></span> Business-Related Interactions</div>'+
+        '<div class="intent-desc">Queries directly related to churn risk, retention, customer management, and reporting — the intended use of the application.</div>'+
+        hbarChart(A.intent.business, {color:"#12A150", ticks:4, max:40, unit:"%", vunit:"%"})+'</div>'+
+      '<div><div class="intent-head"><span class="dot" style="background:#E06B6B"></span> Potential Personal Use Detected</div>'+
+        '<div class="intent-desc">Queries outside the intended business scope. These interactions may indicate off-policy usage and are flagged for governance review.</div>'+
+        hbarChart(A.intent.personal, {color:"#E06B6B", ticks:3, max:15, unit:"%", vunit:"%"})+'</div>'+
+    '</div></div>';
+  h += chartCard("Token Consumption Trend — Last 8 Weeks (All Applications)",
+    "Token: unit of text processed by the AI model (≈ 0.75 words). Higher token usage = more AI activity. Trend shows whether consumption is growing, stable, or declining.",
+    lineChart(A.tokenTrend, {color:"#7C3AED", yfmt:function(v){return (v/1e6).toFixed(1)+"M";}, yLabel:"Tokens consumed", max:Math.max.apply(null,A.tokenTrend)*1.18, xLabels:A.weekLabels}));
+  h += '<div class="two-col">'+
+    chartCard("Weekly Unique Users vs. Total Sessions — All Applications",
+      "Unique Users: distinct individuals. Sessions: total interactions (one person can start multiple sessions per week).",
+      groupedBars(A.weekLabels, A.usersTrend, A.sessionsTrend, {colorA:"#2563EB", colorB:"#7C3AED", labelA:"Unique Active Users", labelB:"Total Sessions", yLabel:"Count"}))+
+    chartCard("Policy Violations by Type — This Week (All Applications)",
+      "Policy violations are flagged when an AI output or interaction breaches a defined governance rule (e.g. unauthorised data exposure, role boundary breach, PII in prompt).",
+      hbarChart(A.violationsByType, {color:"#D92D20", ticks:3, padL:150}))+
+    '</div>';
+  h += '<div class="two-col">'+
+    chartCard("Actual Weekly Cost — Last 8 Weeks (All Applications)",
+      "Cost components: AI inference (API calls), compute (model hosting), storage (vector DB, logs). Values in USD.",
+      lineChart(A.costTrend, {color:"#E8833A", yfmt:function(v){return "$"+Math.round(v);}, yLabel:"Cost (USD)", max:Math.max.apply(null,A.costTrend)*1.25, xLabels:A.weekLabels}))+
+    chartCard("Projected Monthly Cost — Next 6 Months (All Applications)",
+      "Projection assumes ~8% month-on-month growth based on current token and session growth trends. Excludes one-off costs.",
+      vbars(A.projMonths, A.projTrend, {color:"#12A150", yfmt:function(v){return "$"+Math.round(v);}, yLabel:"Projected"}))+
+    '</div>';
+  h += '<div class="card sec-card"><div class="sec-title">Audit Signal Log — All Applications (Last 7 Days)</div>'+
+    '<table class="aud-tbl"><thead><tr><th>TIMESTAMP</th><th>APPLICATION</th><th>SIGNAL TYPE</th><th>DETAIL</th><th>SEVERITY</th><th>STATUS</th></tr></thead><tbody>';
+  A.log.forEach(function(r){
+    h += '<tr><td class="mono">'+esc(r.ts)+'</td><td class="strong">'+esc(r.app)+'</td><td>'+esc(r.type)+'</td>'+
+      '<td>'+esc(r.detail)+'</td><td><span class="pill '+sevCls(r.severity)+'">'+esc(r.severity)+'</span></td>'+
+      '<td><span class="stt '+statCls(r.status)+'">'+esc(r.status)+'</span></td></tr>';
+  });
+  h += '</tbody></table></div>';
+  h += '<div class="card sec-card"><div class="sec-title">AI Application Audit Comparison — All Applications This Week</div>'+
+    '<div class="sec-hint">Double-click any row to view that application\'s detailed audit view.</div>'+
+    '<table class="aud-tbl"><thead><tr><th>APPLICATION</th><th>UNIQUE USERS</th><th>SESSIONS</th><th>TOKEN USAGE</th><th>ACTUAL COST</th><th>POLICY VIOLATIONS</th><th>GOVERNANCE SCORE</th></tr></thead><tbody>';
+  A.apps.forEach(function(a){
+    const gs = a.deployed
+      ? '<span class="gscore '+a.badgeCls+'">'+a.healthScore+'% · '+esc(a.badge)+'</span>'
+      : '<span class="gscore none">—</span>';
+    h += '<tr class="click" ondblclick="drill(\''+a.id+'\')"><td class="strong">'+esc(a.name)+'</td>'+
+      '<td>'+(a.deployed?a.uniqueUsers:'—')+'</td><td>'+(a.deployed?a.sessions:'—')+'</td>'+
+      '<td>'+(a.deployed?tk2(a.tokens):'—')+'</td><td>'+(a.deployed?'$'+fmtInt(a.cost):'—')+'</td>'+
+      '<td class="'+(a.violations>0?'vred':'vgreen')+'">'+a.violations+'</td><td>'+gs+'</td></tr>';
+  });
+  h += '</tbody></table></div>';
+  return h;
+}
+
+// -------------------------------------------------------------- render
+
+function render(){
+  document.querySelectorAll(".dash-btn").forEach(b=>
+    b.classList.toggle("active", b.dataset.dash===S.dash));
+  let h = banner();
+  h += levelPills();
+  if (S.dash === "cortexa"){ h += cortexaView(); }
+  else {
+    h += S.level==="enterprise" ? enterpriseView()
+       : S.level==="bu" ? buView() : applicationView();
+  }
+  document.getElementById("pg-body").innerHTML = h;
+  fit();
+}
+
+// -------------------------------------------------------------- actions
+function setDash(d){ S.dash=d; render(); }
+function setLevel(l){ S.level=l; render(); }
+function setBU(v){ S.bu=v; render(); }
+function toggleFormula(){ S.formula=!S.formula; render(); }
+function toggleFmt(){ S.fmt=!S.fmt; render(); }
+function toggleManual(){
+  const inner=document.getElementById("manual-inner");
+  if(inner) inner.style.display = inner.style.display==="none"?"block":"none";
+  fit();
+}
+function drill(id){ S.app=id; S.level="application"; render();
+  document.getElementById("cx-root").scrollIntoView({behavior:"smooth",block:"start"}); }
+function clearApp(){ S.app=null; render(); }
+function setManual(id,f,v){ if(!S.manual[id]) S.manual[id]={}; S.manual[id][f]=v; }
+function saveManual(){ toast("✔ Manual governance data saved for this session"); }
+
+function downloadTemplate(){
+  let rows=[["app_code","app_name","business_unit","reported_active_users","reported_uptime_pct","notes"]];
+  DATA.apps.forEach(a=>{ const m=S.manual[a.id]||{};
+    rows.push([a.code,a.name,a.bu,(m.users!=null?m.users:""),(m.uptime!=null?m.uptime:""),(m.notes||"")]); });
+  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(",")).join("\n");
+  const blob=new Blob([csv],{type:"text/csv"});
+  const url=URL.createObjectURL(blob); const link=document.createElement("a");
+  link.href=url; link.download="governance_manual_template.csv"; link.click();
+  URL.revokeObjectURL(url); toast("⬇ Template downloaded");
+}
+
+function onUpload(ev){
+  const file=ev.target.files[0]; if(!file) return;
+  const r=new FileReader();
+  r.onload=e=>{ try{
+    const lines=e.target.result.split(/\r?\n/).filter(x=>x.trim());
+    const hdr=lines.shift().split(",").map(s=>s.replace(/(^"|"$)/g,"").trim().toLowerCase());
+    const ci=n=>hdr.indexOf(n);
+    let n=0;
+    lines.forEach(line=>{
+      const cells=line.match(/("([^"]|"")*"|[^,]*)/g).filter((_,i)=>i%2===0).map(c=>c.replace(/(^"|"$)/g,"").replace(/""/g,'"'));
+      const code=cells[ci("app_code")];
+      const app=DATA.apps.find(a=>a.code===code);
+      if(app){ S.manual[app.id]={ users:cells[ci("reported_active_users")]||"",
+        uptime:cells[ci("reported_uptime_pct")]||"", notes:cells[ci("notes")]||"" }; n++; }
+    });
+    render(); toast("⬆ Imported "+n+" row"+(n===1?"":"s"));
+  }catch(err){ toast("Could not parse that file"); } };
+  r.readAsText(file);
+}
+
+let toastT;
+function toast(msg){
+  const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2200);
+}
+
+// resize the Streamlit iframe to fit content (best-effort; falls back to fixed height)
+function fit(){
+  try{
+    const h=document.getElementById("cx-root").offsetHeight+30;
+    if(window.frameElement){ window.frameElement.style.height=h+"px";
+      window.frameElement.setAttribute("height",h); }
+  }catch(e){}
+}
+
+document.querySelectorAll(".dash-btn").forEach(b=>b.addEventListener("click",()=>setDash(b.dataset.dash)));
+render();
+[120,400,900].forEach(t=>setTimeout(fit,t));
+window.addEventListener("resize",fit);
+</script>
